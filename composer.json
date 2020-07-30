@@ -1,5 +1,5 @@
 {
-	"name": "cron/neos-clitools",
+	"name": "cron/neos-cli-tools",
 	"type": "neos-package",
 	"require": {
 		"neos/neos": "~4.0"
