@@ -1,0 +1,14 @@
+{
+	"name": "cron/neos-clitools",
+	"type": "neos-package",
+	"require": {
+		"neos/neos": "~4.0"
+	},
+	"license": "proprietary",
+	"description": "CLI Content Repository related utilities (previously part of CRLib)",
+	"autoload": {
+		"psr-4": {
+			"CRON\\NeosCliTools\\": "Classes"
+		}
+	}
+}
