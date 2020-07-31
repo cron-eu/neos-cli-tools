@@ -170,21 +170,28 @@ class PageCommandController extends CommandController
      * @param string $type node type, defaults to Neos.Neos.NodeTypes:Page
      * @param string $properties node properties, as JSON, e.g. '{"title":"My Fancy Title"}'
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
+     * @param boolean $overwriteExisting whether to overwrite an existing node for that path instead of creating a new one with path segment "node-..."
      */
-    public function createCommand($parentUrl, $name, $type = 'Neos.NodeTypes:Page', $properties = null, $workspace = 'live')
+    public function createCommand($parentUrl, $name, $type = 'Neos.NodeTypes:Page', $properties = null, $workspace = 'live', $overwriteExisting = false)
     {
         try {
             $this->cr->setup($workspace);
             $nodeType = $this->cr->getNodeType($type);
             $parentNode = $this->cr->getNodeForURL($parentUrl);
-            $nodeName = $this->cr->generateUniqNodeName($parentNode, $name);
-            $newNode = $parentNode->createNode($nodeName, $nodeType);
+
+            $existingNode = $parentNode->getNode($name);
+
+            if ($overwriteExisting && $existingNode) {
+                $node = $existingNode;
+                $this->outputLine(sprintf('%s already exists, updating properties... .', $node));
+            } else {
+                $node = $parentNode->createNode($this->cr->generateUniqNodeName($parentNode, $name), $nodeType);
+                $this->outputLine(sprintf('%s created.', $node));
+            }
 
             if ($properties) {
-                $this->cr->setNodeProperties($newNode, $properties);
+                $this->cr->setNodeProperties($node, $properties);
             }
-            $this->outputLine(sprintf('%s created.', $newNode));
-
         } catch (\Exception $e) {
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
         }
