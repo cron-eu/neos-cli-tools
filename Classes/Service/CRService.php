@@ -13,6 +13,8 @@ use /** @noinspection PhpUnusedAliasInspection */
 
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Flow\ResourceManagement\ResourceManager;
+use Neos\Media\Domain\Model\Image;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Service\ContentContext;
 use Neos\ContentRepository\Domain\Model\Workspace;
@@ -66,6 +68,12 @@ class CRService
 
     /** @var NodeInterface */
     public $rootNode;
+
+    /**
+     * @Flow\Inject
+     * @var ResourceManager
+     */
+    protected $resourceManager;
 
     /**
      * Setup and configure the context to use, take care of the arguments like user name etc.
@@ -280,7 +288,7 @@ class CRService
                 break;
 
             case \Neos\Media\Domain\Model\ImageInterface::class:
-                throw new \Exception('mapping an image type currently not implemented');
+                $value = new Image($this->resourceManager->importResource($stringInput));
                 break;
 
             default:
