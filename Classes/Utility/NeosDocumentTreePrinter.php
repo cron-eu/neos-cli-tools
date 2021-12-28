@@ -3,13 +3,13 @@
 namespace CRON\NeosCliTools\Utility;
 
 use Neos\ContentRepository\Domain\NodeType\NodeTypeConstraintFactory;
+use Neos\ContentRepository\Domain\Projection\Content\TraversableNodeInterface;
 use Neos\ContentRepository\Exception\NodeException;
 use Neos\Flow\Cli\ConsoleOutput;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
  * @property int maxDepth
- * @property NodeInterface rootNode
+ * @property TraversableNodeInterface rootNode
  * @property ConsoleOutput consoleOutput
  */
 class NeosDocumentTreePrinter
@@ -20,7 +20,7 @@ class NeosDocumentTreePrinter
      */
     protected $nodeTypeConstraintFactory;
 
-    public function __construct(NodeInterface $node, $maxDepth = 0) {
+    public function __construct(TraversableNodeInterface $node, $maxDepth = 0) {
         $this->maxDepth = $maxDepth;
         $this->rootNode = $node;
     }
@@ -30,14 +30,14 @@ class NeosDocumentTreePrinter
     }
 
     /**
-     * @param NodeInterface $document
+     * @param TraversableNodeInterface $document
      * @param int $currentDepth
      *
      * @param array $currentURLPathPrefix
      *
      * @throws NodeException
      */
-    private function printDocument(NodeInterface $document, int $currentDepth = 0, array $currentURLPathPrefix = [])
+    private function printDocument(TraversableNodeInterface $document, int $currentDepth = 0, array $currentURLPathPrefix = [])
     {
         $urlPathPrefix = array_merge($currentURLPathPrefix, [$document->getProperty('uriPathSegment')]);
         $url = join('/', $urlPathPrefix);
@@ -61,14 +61,14 @@ class NeosDocumentTreePrinter
     private $documentTree = [];
 
     /**
-     * @param NodeInterface $document
+     * @param TraversableNodeInterface $document
      * @param int $currentDepth
      *
      * @param array $currentURLPathPrefix
      *
      * @throws NodeException
      */
-    private function buildDocumentTreeRecursive(NodeInterface $document, int $currentDepth = 0, array $currentURLPathPrefix = [])
+    private function buildDocumentTreeRecursive(TraversableNodeInterface $document, int $currentDepth = 0, array $currentURLPathPrefix = [])
     {
         $urlPathPrefix = array_merge($currentURLPathPrefix, [$document->getProperty('uriPathSegment')]);
         $url = join('/', $urlPathPrefix);

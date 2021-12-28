@@ -6,11 +6,11 @@ use DateTime;
 use Exception;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\NodeType\NodeTypeConstraintFactory;
+use Neos\ContentRepository\Domain\Projection\Content\TraversableNodeInterface;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\NodeServiceInterface;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Flow\Annotations as Flow;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Media\Domain\Model\Image;
 use Neos\Media\Domain\Model\ImageInterface;
@@ -65,7 +65,7 @@ class CRService
      */
     public $context;
 
-    /** @var NodeInterface */
+    /** @var TraversableNodeInterface */
     public $rootNode;
 
     /**
@@ -108,14 +108,14 @@ class CRService
     }
 
     /**
-     * @param NodeInterface $document
+     * @param TraversableNodeInterface $document
      * @param $url
      *
      * @return string
      *
      * @throws Exception
      */
-    public function getNodePathForURL(NodeInterface $document, $url): string
+    public function getNodePathForURL(TraversableNodeInterface $document, $url): string
     {
         $parts = explode('/', $url);
         foreach ($parts as $segment) {
@@ -127,16 +127,16 @@ class CRService
     }
 
     /**
-     * @param NodeInterface $document
+     * @param TraversableNodeInterface $document
      * @param $pathSegment
      *
-     * @return NodeInterface
+     * @return TraversableNodeInterface
      * @throws Exception
      */
-    private function getChildDocumentByURIPathSegment(NodeInterface $document, $pathSegment): NodeInterface
+    private function getChildDocumentByURIPathSegment(TraversableNodeInterface $document, $pathSegment): TraversableNodeInterface
     {
         $found = array_filter($document->findChildNodes($this->nodeTypeConstraintFactory->parseFilterString('Neos.Neos:Document'))->toArray(),
-            function (NodeInterface $document) use ($pathSegment ){
+            function (TraversableNodeInterface $document) use ($pathSegment ){
                 return $document->getProperty('uriPathSegment') === $pathSegment;
             }
         );
@@ -171,12 +171,12 @@ class CRService
     /**
      * Sets the node properties
      *
-     * @param NodeInterface $node
+     * @param TraversableNodeInterface $node
      * @param string $propertiesJSON JSON string of node properties
      *
      * @throws Exception
      */
-    public function setNodeProperties(NodeInterface $node, string $propertiesJSON)
+    public function setNodeProperties(TraversableNodeInterface $node, string $propertiesJSON)
     {
         $data = json_decode($propertiesJSON, true);
 
@@ -195,10 +195,10 @@ class CRService
      *
      * @param string $url URL of the node, e.g. '/news/my-news'
      *
-     * @return NodeInterface
+     * @return TraversableNodeInterface
      * @throws Exception
      */
-    public function getNodeForURL(string $url): NodeInterface
+    public function getNodeForURL(string $url): TraversableNodeInterface
     {
         return $this->context->getNode($this->getNodePathForURL($this->rootNode, $url));
     }
@@ -208,10 +208,10 @@ class CRService
      *
      * @param string $path relative path of the page
      *
-     * @return NodeInterface
+     * @return TraversableNodeInterface
      * @throws Exception
      */
-    public function getNodeForPath(string $path): NodeInterface
+    public function getNodeForPath(string $path): TraversableNodeInterface
     {
         return $this->context->getNode($this->sitePath . $path);
     }
@@ -231,12 +231,12 @@ class CRService
     }
 
     /**
-     * @param NodeInterface $parentNode
+     * @param TraversableNodeInterface $parentNode
      * @param string|null $idealNodeName
      *
      * @return string
      */
-    public function generateUniqNodeName(NodeInterface $parentNode, string $idealNodeName = null): string
+    public function generateUniqNodeName(TraversableNodeInterface $parentNode, string $idealNodeName = null): string
     {
         return $this->nodeService->generateUniqueNodeName($parentNode->findNodePath(), $idealNodeName);
     }
@@ -257,14 +257,14 @@ class CRService
     /**
      * Map a String Value to the corresponding Neos Object
      *
-     * @param $node NodeInterface
+     * @param $node TraversableNodeInterface
      * @param $propertyName string
      * @param $stringInput string
      *
      * @return mixed
      * @throws Exception
      */
-    protected function propertyMapper(NodeInterface $node, string $propertyName, string $stringInput)
+    protected function propertyMapper(TraversableNodeInterface $node, string $propertyName, string $stringInput)
     {
 
         if ($stringInput === 'NULL') {

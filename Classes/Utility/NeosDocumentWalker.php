@@ -1,13 +1,13 @@
 <?php
 namespace CRON\NeosCliTools\Utility;
 
-use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\NodeType\NodeTypeConstraintFactory;
+use Neos\ContentRepository\Domain\Projection\Content\TraversableNodeInterface;
 
 /**
  * @property int limit
- * @property NodeInterface rootNode
- * @property NodeInterface[] nodes
+ * @property TraversableNodeInterface rootNode
+ * @property TraversableNodeInterface[] nodes
  */
 class NeosDocumentWalker
 {
@@ -17,12 +17,12 @@ class NeosDocumentWalker
      */
     protected $nodeTypeConstraintFactory;
 
-    public function __construct(NodeInterface $rootNode)
+    public function __construct(TraversableNodeInterface $rootNode)
     {
         $this->rootNode = $rootNode;
     }
 
-    private function walk(NodeInterface $node) {
+    private function walk(TraversableNodeInterface $node) {
 
         foreach ($node->findChildNodes($this->nodeTypeConstraintFactory->parseFilterString('Neos.Neos:Document')) as $childNode) {
             if ($this->limit && count($this->nodes) >= $this->limit) {
@@ -40,7 +40,7 @@ class NeosDocumentWalker
      *
      * @param int $limit
      *
-     * @return array|NodeInterface[]
+     * @return array|TraversableNodeInterface[]
      */
     public function getNodes(int $limit = 0): array
     {

@@ -5,11 +5,11 @@ namespace CRON\NeosCliTools\Command;
 use CRON\NeosCliTools\Service\CRService;
 use Exception;
 use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
+use Neos\ContentRepository\Domain\Projection\Content\TraversableNodeInterface;
 use Neos\Flow\Annotations as Flow;
 use CRON\NeosCliTools\Utility\NeosDocumentTreePrinter;
 use CRON\NeosCliTools\Utility\NeosDocumentWalker;
 use Neos\Flow\Cli\CommandController;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Cli\Exception\StopCommandException;
 use Neos\Flow\Mvc\Exception\StopActionException;
 
@@ -105,14 +105,13 @@ class PageCommandController extends CommandController
             }
             $walker = new NeosDocumentWalker($rootNode);
 
-            /** @var NodeInterface[] $nodesToDelete */
             $nodesToDelete = $walker->getNodes($limit);
 
             foreach ($nodesToDelete as $nodeToDelete) {
                 $nodeToDelete->remove();
             }
 
-            $this->output->outputTable(array_map( function(NodeInterface $node) { return [$node]; }, $nodesToDelete),
+            $this->output->outputTable(array_map(function(TraversableNodeInterface $node) { return [$node]; }, $nodesToDelete),
                 ['Deleted Pages']);
             $this->quit(count($nodesToDelete) > 0 ? 0 : 1);
 
