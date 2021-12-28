@@ -2,6 +2,7 @@
 namespace CRON\NeosCliTools\Utility;
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\NodeType\NodeTypeConstraintFactory;
 
 /**
  * @property int limit
@@ -10,6 +11,12 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
  */
 class NeosDocumentWalker
 {
+    /**
+     * @Flow\Inject
+     * @var NodeTypeConstraintFactory
+     */
+    protected $nodeTypeConstraintFactory;
+
     public function __construct(NodeInterface $rootNode)
     {
         $this->rootNode = $rootNode;
@@ -17,7 +24,7 @@ class NeosDocumentWalker
 
     private function walk(NodeInterface $node) {
 
-        foreach ($node->getChildNodes('Neos.Neos:Document') as $childNode) {
+        foreach ($node->findChildNodes($this->nodeTypeConstraintFactory->parseFilterString('Neos.Neos:Document')) as $childNode) {
             if ($this->limit && count($this->nodes) >= $this->limit) {
                 return;
             }

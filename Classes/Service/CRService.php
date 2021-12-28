@@ -5,6 +5,7 @@ namespace CRON\NeosCliTools\Service;
 use DateTime;
 use Exception;
 use Neos\ContentRepository\Domain\Model\NodeType;
+use Neos\ContentRepository\Domain\NodeType\NodeTypeConstraintFactory;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\NodeServiceInterface;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
@@ -74,6 +75,12 @@ class CRService
     protected $resourceManager;
 
     /**
+     * @Flow\Inject
+     * @var NodeTypeConstraintFactory
+     */
+    protected $nodeTypeConstraintFactory;
+
+    /**
      * Setup and configure the context to use, take care of the arguments like user name etc.
      *
      * @param string $workspace workspace name, defaults to the live workspace
@@ -116,7 +123,7 @@ class CRService
             $document = $this->getChildDocumentByURIPathSegment($document, $segment);
         }
 
-        return $document->getPath();
+        return $document->findNodePath();
     }
 
     /**
@@ -128,7 +135,7 @@ class CRService
      */
     private function getChildDocumentByURIPathSegment(NodeInterface $document, $pathSegment): NodeInterface
     {
-        $found = array_filter($document->getChildNodes('Neos.Neos:Document'),
+        $found = array_filter($document->findChildNodes($this->nodeTypeConstraintFactory->parseFilterString('Neos.Neos:Document'))->toArray(),
             function (NodeInterface $document) use ($pathSegment ){
                 return $document->getProperty('uriPathSegment') === $pathSegment;
             }
@@ -137,7 +144,7 @@ class CRService
         if (count($found) === 0) {
             throw new Exception(sprintf('Could not find any child document for URL path segment: "%s" on "%s',
                 $pathSegment,
-                $document->getPath()
+                $document->findNodePath()
             ));
         }
         return array_pop($found);
@@ -231,7 +238,7 @@ class CRService
      */
     public function generateUniqNodeName(NodeInterface $parentNode, string $idealNodeName = null): string
     {
-        return $this->nodeService->generateUniqueNodeName($parentNode->getPath(), $idealNodeName);
+        return $this->nodeService->generateUniqueNodeName($parentNode->findNodePath(), $idealNodeName);
     }
 
     /**

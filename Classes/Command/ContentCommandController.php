@@ -4,6 +4,7 @@ namespace CRON\NeosCliTools\Command;
 
 use CRON\NeosCliTools\Service\CRService;
 use Exception;
+use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 
@@ -26,13 +27,13 @@ class ContentCommandController extends CommandController
         try {
             $this->cr->setup($workspace);
             $page = $this->cr->getNodeForURL($url);
-            $collectionNode = $page->getNode($collection);
+            $collectionNode = $page->findNamedChildNode(NodeName::fromString($collection));
 
             if ($collectionNode === null) {
                 throw new Exception(sprintf('page has no collection node named "%s"', $collection));
             }
 
-            foreach ($collectionNode->getChildNodes() as $childNode) {
+            foreach ($collectionNode->findChildNodes() as $childNode) {
                 $this->outputLine($childNode);
             }
 
@@ -70,7 +71,7 @@ class ContentCommandController extends CommandController
             $page = $this->cr->getNodeForURL($url);
 
             // Check if the content collection exists. If not, create it
-            $collectionNode = $page->getNode($collection);
+            $collectionNode = $page->findNamedChildNode(NodeName::fromString($collection));
 
             if (!$collectionNode) {
                 $this->outputLine(sprintf('Could not find collection \'%s\', creating... .', $collection));
@@ -84,7 +85,7 @@ class ContentCommandController extends CommandController
                 $componentPathSegments = explode('/', trim($componentPath, '/'));
 
                 foreach ($componentPathSegments as $componentPathSegment) {
-                    $nextSegmentNode = $segmentNode->getNode($componentPathSegment);
+                    $nextSegmentNode = $segmentNode->findNamedChildNode(NodeName::fromString($componentPathSegment));
                     if (!$nextSegmentNode) {
                         $nextSegmentNode = $segmentNode->createNode($componentPathSegment);
                     }
@@ -92,7 +93,7 @@ class ContentCommandController extends CommandController
                 }
             }
 
-            $existingNode = $segmentNode->getNode($name);
+            $existingNode = $segmentNode->findNamedChildNode(NodeName::fromString($name));
 
             if ($overwriteExisting && $existingNode) {
                 $contentNode = $existingNode;

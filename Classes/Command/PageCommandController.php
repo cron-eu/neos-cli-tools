@@ -4,6 +4,7 @@ namespace CRON\NeosCliTools\Command;
 
 use CRON\NeosCliTools\Service\CRService;
 use Exception;
+use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
 use Neos\Flow\Annotations as Flow;
 use CRON\NeosCliTools\Utility\NeosDocumentTreePrinter;
 use CRON\NeosCliTools\Utility\NeosDocumentWalker;
@@ -174,7 +175,7 @@ class PageCommandController extends CommandController
             $nodeType = $this->cr->getNodeType($type);
             $parentNode = $this->cr->getNodeForURL($parentUrl);
 
-            $existingNode = $parentNode->getNode($name);
+            $existingNode = $parentNode->findNamedChildNode(NodeName::fromString($name));
 
             if ($overwriteExisting && $existingNode) {
                 $node = $existingNode;

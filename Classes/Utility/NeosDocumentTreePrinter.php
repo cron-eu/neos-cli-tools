@@ -2,6 +2,7 @@
 
 namespace CRON\NeosCliTools\Utility;
 
+use Neos\ContentRepository\Domain\NodeType\NodeTypeConstraintFactory;
 use Neos\ContentRepository\Exception\NodeException;
 use Neos\Flow\Cli\ConsoleOutput;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -13,13 +14,19 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
  */
 class NeosDocumentTreePrinter
 {
+    /**
+     * @Flow\Inject
+     * @var NodeTypeConstraintFactory
+     */
+    protected $nodeTypeConstraintFactory;
+
     public function __construct(NodeInterface $node, $maxDepth = 0) {
         $this->maxDepth = $maxDepth;
         $this->rootNode = $node;
     }
 
     private function trimPath($input) {
-        return str_replace($this->rootNode->getPath(), '', $input);
+        return str_replace($this->rootNode->findNodePath(), '', $input);
     }
 
     /**
@@ -39,11 +46,11 @@ class NeosDocumentTreePrinter
             str_replace('home', '', $url),
             $document->getProperty('title'),
             $document->getNodeType()->getName(),
-            $this->trimPath($document->getPath()),
+            $this->trimPath($document->findNodePath()),
         ], $currentDepth * 0);
 
         if ($currentDepth < $this->maxDepth) {
-            $childDocuments = $document->getChildNodes('Neos.Neos:Document');
+            $childDocuments = $document->findChildNodes($this->nodeTypeConstraintFactory->parseFilterString('Neos.Neos:Document'));
             foreach ($childDocuments as $childDocument) {
                 $this->printDocument($childDocument, $currentDepth + 1, $urlPathPrefix);
             }
@@ -70,11 +77,11 @@ class NeosDocumentTreePrinter
             str_replace('home', '', $url),
             $document->getProperty('title'),
             $document->getNodeType()->getName(),
-            $this->trimPath($document->getPath()),
+            $this->trimPath($document->findNodePath()),
         ];
 
         if ($currentDepth < $this->maxDepth) {
-            $childDocuments = $document->getChildNodes('Neos.Neos:Document');
+            $childDocuments = $document->findChildNodes($this->nodeTypeConstraintFactory->parseFilterString('Neos.Neos:Document'));
             foreach ($childDocuments as $childDocument) {
                 $this->buildDocumentTreeRecursive($childDocument, $currentDepth + 1, $urlPathPrefix);
             }
