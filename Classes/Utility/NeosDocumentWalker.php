@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: remuslazar
- * Date: 02.05.18
- * Time: 23:45
- */
-
 namespace CRON\NeosCliTools\Utility;
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -42,7 +35,8 @@ class NeosDocumentWalker
      *
      * @return array|NodeInterface[]
      */
-    public function getNodes($limit=0) {
+    public function getNodes(int $limit = 0): array
+    {
         $this->limit = $limit;
         $this->nodes = [];
         $this->walk($this->rootNode);

@@ -1,13 +1,8 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: remuslazar
- * Date: 02.05.18
- * Time: 22:12
- */
 
 namespace CRON\NeosCliTools\Utility;
 
+use Neos\ContentRepository\Exception\NodeException;
 use Neos\Flow\Cli\ConsoleOutput;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 
@@ -33,9 +28,9 @@ class NeosDocumentTreePrinter
      *
      * @param array $currentURLPathPrefix
      *
-     * @throws \Neos\ContentRepository\Exception\NodeException
+     * @throws NodeException
      */
-    private function printDocument(NodeInterface $document, $currentDepth = 0, array $currentURLPathPrefix = [])
+    private function printDocument(NodeInterface $document, int $currentDepth = 0, array $currentURLPathPrefix = [])
     {
         $urlPathPrefix = array_merge($currentURLPathPrefix, [$document->getProperty('uriPathSegment')]);
         $url = join('/', $urlPathPrefix);
@@ -47,7 +42,6 @@ class NeosDocumentTreePrinter
             $this->trimPath($document->getPath()),
         ], $currentDepth * 0);
 
-//        \Neos\Flow\var_dump($document);
         if ($currentDepth < $this->maxDepth) {
             $childDocuments = $document->getChildNodes('Neos.Neos:Document');
             foreach ($childDocuments as $childDocument) {
@@ -65,9 +59,9 @@ class NeosDocumentTreePrinter
      *
      * @param array $currentURLPathPrefix
      *
-     * @throws \Neos\ContentRepository\Exception\NodeException
+     * @throws NodeException
      */
-    private function buildDocumentTreeRecursive(NodeInterface $document, $currentDepth = 0, array $currentURLPathPrefix = [])
+    private function buildDocumentTreeRecursive(NodeInterface $document, int $currentDepth = 0, array $currentURLPathPrefix = [])
     {
         $urlPathPrefix = array_merge($currentURLPathPrefix, [$document->getProperty('uriPathSegment')]);
         $url = join('/', $urlPathPrefix);
@@ -93,9 +87,9 @@ class NeosDocumentTreePrinter
      *
      * @param bool $asTable
      *
-     * @throws \Neos\ContentRepository\Exception\NodeException
+     * @throws NodeException
      */
-    public function printTree(ConsoleOutput $output, $asTable = true)
+    public function printTree(ConsoleOutput $output, bool $asTable = true)
     {
         $this->consoleOutput = $output;
         if ($asTable) {

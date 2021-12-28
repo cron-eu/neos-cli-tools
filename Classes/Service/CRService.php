@@ -1,23 +1,22 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: remuslazar
- * Date: 2019-01-30
- * Time: 16:13
- */
 
 namespace CRON\NeosCliTools\Service;
 
-use /** @noinspection PhpUnusedAliasInspection */
-    Neos\Flow\Annotations as Flow;
-
-
+use DateTime;
+use Exception;
+use Neos\ContentRepository\Domain\Model\NodeType;
+use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
+use Neos\ContentRepository\Domain\Service\NodeServiceInterface;
+use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Media\Domain\Model\Image;
+use Neos\Media\Domain\Model\ImageInterface;
 use Neos\Neos\Domain\Model\Site;
+use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\Service\ContentContext;
-use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\Neos\Domain\Service\ContentContextFactory;
 
 /**
  * Content Repository related logic
@@ -30,34 +29,33 @@ use Neos\ContentRepository\Domain\Model\Workspace;
  */
 class CRService
 {
-
     /**
      * @Flow\Inject
-     * @var \Neos\Neos\Domain\Service\ContentContextFactory
+     * @var ContentContextFactory
      */
     protected $contextFactory;
 
     /**
      * @Flow\Inject
-     * @var \Neos\Neos\Domain\Repository\SiteRepository
+     * @var SiteRepository
      */
     protected $siteRepository;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Repository\WorkspaceRepository
+     * @var WorkspaceRepository
      */
     protected $workspaceRepository;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Service\NodeTypeManager
+     * @var NodeTypeManager
      */
     protected $nodeTypeManager;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Service\NodeServiceInterface
+     * @var NodeServiceInterface
      */
     protected $nodeService;
 
@@ -80,16 +78,16 @@ class CRService
      *
      * @param string $workspace workspace name, defaults to the live workspace
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function setup($workspace = 'live')
+    public function setup(string $workspace = 'live')
     {
-        // validate user name, use the live workspace if null
+        // validate username, use the live workspace if null
         $this->workspaceName = $workspace;
 
         /** @noinspection PhpUndefinedMethodInspection */
         if (!$this->workspaceRepository->findByName($this->workspaceName)->count()) {
-            throw new \Exception(sprintf('Workspace "%s" is invalid', $this->workspaceName));
+            throw new Exception(sprintf('Workspace "%s" is invalid', $this->workspaceName));
         }
 
         $this->context = $this->contextFactory->create([
@@ -108,9 +106,10 @@ class CRService
      *
      * @return string
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function getNodePathForURL(NodeInterface $document, $url) {
+    public function getNodePathForURL(NodeInterface $document, $url): string
+    {
         $parts = explode('/', $url);
         foreach ($parts as $segment) {
             if (!$segment) { continue; }
@@ -125,9 +124,10 @@ class CRService
      * @param $pathSegment
      *
      * @return NodeInterface
-     * @throws \Exception
+     * @throws Exception
      */
-    private function getChildDocumentByURIPathSegment(NodeInterface $document, $pathSegment) {
+    private function getChildDocumentByURIPathSegment(NodeInterface $document, $pathSegment): NodeInterface
+    {
         $found = array_filter($document->getChildNodes('Neos.Neos:Document'),
             function (NodeInterface $document) use ($pathSegment ){
                 return $document->getProperty('uriPathSegment') === $pathSegment;
@@ -135,7 +135,7 @@ class CRService
         );
 
         if (count($found) === 0) {
-            throw new \Exception(sprintf('Could not find any child document for URL path segment: "%s" on "%s',
+            throw new Exception(sprintf('Could not find any child document for URL path segment: "%s" on "%s',
                 $pathSegment,
                 $document->getPath()
             ));
@@ -148,13 +148,14 @@ class CRService
      *
      * @param string $type NodeType name, e.g. 'YPO3.Neos.NodeTypes:Page'
      *
-     * @return \Neos\ContentRepository\Domain\Model\NodeType
+     * @return NodeType
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function getNodeType($type) {
+    public function getNodeType(string $type): NodeType
+    {
         if (!$this->nodeTypeManager->hasNodeType($type)) {
-            throw new \Exception('specified node type is not valid');
+            throw new Exception('specified node type is not valid');
         }
 
         return $this->nodeTypeManager->getNodeType($type);
@@ -166,14 +167,14 @@ class CRService
      * @param NodeInterface $node
      * @param string $propertiesJSON JSON string of node properties
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function setNodeProperties($node, $propertiesJSON)
+    public function setNodeProperties(NodeInterface $node, string $propertiesJSON)
     {
         $data = json_decode($propertiesJSON, true);
 
         if ($data === null) {
-            throw new \Exception('could not decode JSON data');
+            throw new Exception('could not decode JSON data');
         }
 
         foreach ($data as $name => $value) {
@@ -188,9 +189,9 @@ class CRService
      * @param string $url URL of the node, e.g. '/news/my-news'
      *
      * @return NodeInterface
-     * @throws \Exception
+     * @throws Exception
      */
-    public function getNodeForURL($url)
+    public function getNodeForURL(string $url): NodeInterface
     {
         return $this->context->getNode($this->getNodePathForURL($this->rootNode, $url));
     }
@@ -201,9 +202,9 @@ class CRService
      * @param string $path relative path of the page
      *
      * @return NodeInterface
-     * @throws \Exception
+     * @throws Exception
      */
-    public function getNodeForPath($path)
+    public function getNodeForPath(string $path): NodeInterface
     {
         return $this->context->getNode($this->sitePath . $path);
     }
@@ -211,37 +212,36 @@ class CRService
     /**
      * Publishes the configured workspace
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function publish()
     {
         $liveWorkspace = $this->workspaceRepository->findByIdentifier('live');
         if (!$liveWorkspace) {
-            throw new \Exception('Could not find the live workspace.');
+            throw new Exception('Could not find the live workspace.');
         }
-        /** @var Workspace $liveWorkspace */
         $this->context->getWorkspace()->publish($liveWorkspace);
     }
 
     /**
      * @param NodeInterface $parentNode
-     * @param string $idealNodeName
+     * @param string|null $idealNodeName
      *
      * @return string
      */
-    public function generateUniqNodeName($parentNode, $idealNodeName = null) {
+    public function generateUniqNodeName(NodeInterface $parentNode, string $idealNodeName = null): string
+    {
         return $this->nodeService->generateUniqueNodeName($parentNode->getPath(), $idealNodeName);
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function initializeObject()
     {
-        /** @var Site $currentSite */
         $currentSite = $this->siteRepository->findFirstOnline();
         if (!$currentSite) {
-            throw new \Exception('No site found');
+            throw new Exception('No site found');
         }
         $this->sitePath = '/sites/' . $currentSite->getNodeName();
         $this->currentSite = $currentSite;
@@ -255,9 +255,9 @@ class CRService
      * @param $stringInput string
      *
      * @return mixed
-     * @throws \Exception
+     * @throws Exception
      */
-    protected function propertyMapper($node, $propertyName, $stringInput)
+    protected function propertyMapper(NodeInterface $node, string $propertyName, string $stringInput)
     {
 
         if ($stringInput === 'NULL') {
@@ -276,7 +276,7 @@ class CRService
                 break;
 
             case 'DateTime':
-                $value = new \DateTime($stringInput);
+                $value = new DateTime($stringInput);
                 break;
 
             case 'integer':
@@ -287,7 +287,7 @@ class CRService
                 $value = boolval($stringInput);
                 break;
 
-            case \Neos\Media\Domain\Model\ImageInterface::class:
+            case ImageInterface::class:
                 $value = new Image($this->resourceManager->importResource($stringInput));
                 break;
 
@@ -298,5 +298,4 @@ class CRService
 
         return $value;
     }
-
 }

@@ -1,20 +1,16 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: remuslazar
- * Date: 02.05.18
- * Time: 18:58
- */
 
 namespace CRON\NeosCliTools\Command;
 
-use /** @noinspection PhpUnusedAliasInspection */
-    Neos\Flow\Annotations as Flow;
-
+use CRON\NeosCliTools\Service\CRService;
+use Exception;
+use Neos\Flow\Annotations as Flow;
 use CRON\NeosCliTools\Utility\NeosDocumentTreePrinter;
 use CRON\NeosCliTools\Utility\NeosDocumentWalker;
 use Neos\Flow\Cli\CommandController;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Flow\Cli\Exception\StopCommandException;
+use Neos\Flow\Mvc\Exception\StopActionException;
 
 /**
  * Class PageCommandController
@@ -31,10 +27,9 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
  */
 class PageCommandController extends CommandController
 {
-
     /**
      * @Flow\Inject
-     * @var \CRON\NeosCliTools\Service\CRService
+     * @var CRService
      */
     protected $cr;
 
@@ -43,9 +38,9 @@ class PageCommandController extends CommandController
      *
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function infoCommand($workspace = 'live')
+    public function infoCommand(string $workspace = 'live')
     {
         $this->cr->setup($workspace);
 
@@ -55,7 +50,8 @@ class PageCommandController extends CommandController
                 ['Workspace Name', $this->cr->workspaceName],
                 ['Site node name', $this->cr->currentSite->getNodeName()],
             ],
-            [ 'Key', 'Value']);
+            [ 'Key', 'Value']
+        );
     }
 
     /**
@@ -66,17 +62,17 @@ class PageCommandController extends CommandController
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
      *
      */
-    public function listCommand($depth=1, $path = '', $workspace = 'live')
+    public function listCommand(int $depth = 1, string $path = '', string $workspace = 'live')
     {
         try {
             $this->cr->setup($workspace);
             $rootNode = $this->cr->getNodeForPath($path);
             if (!$rootNode) {
-                throw new \Exception(sprintf('Could not find any node on path "%s"', $path));
+                throw new Exception(sprintf('Could not find any node on path "%s"', $path));
             }
             $printer = new NeosDocumentTreePrinter($rootNode, $depth);
             $printer->printTree($this->output);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
         }
     }
@@ -90,9 +86,9 @@ class PageCommandController extends CommandController
      * @param int $limit limit
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
      *
-     * @throws \Neos\Flow\Mvc\Exception\StopActionException
+     * @throws StopCommandException
      */
-    public function removeCommand($path = '', $url = '', $limit = 0, $workspace = 'live')
+    public function removeCommand(string $path = '', string $url = '', int $limit = 0, string $workspace = 'live')
     {
         try {
             $this->cr->setup($workspace);
@@ -104,7 +100,7 @@ class PageCommandController extends CommandController
             }
 
             if (!$rootNode) {
-                throw new \Exception(sprintf('Could not find any node on path "%s"', $path));
+                throw new Exception(sprintf('Could not find any node on path "%s"', $path));
             }
             $walker = new NeosDocumentWalker($rootNode);
 
@@ -119,8 +115,8 @@ class PageCommandController extends CommandController
                 ['Deleted Pages']);
             $this->quit(count($nodesToDelete) > 0 ? 0 : 1);
 
-        } catch (\Exception $e) {
-            if ($e instanceof \Neos\Flow\Mvc\Exception\StopActionException) { return; }
+        } catch (Exception $e) {
+            if ($e instanceof StopActionException) { return; }
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
             $this->quit(1);
         }
@@ -131,14 +127,14 @@ class PageCommandController extends CommandController
      *
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
      *
-     * @throws \Neos\Flow\Mvc\Exception\StopActionException
+     * @throws StopCommandException
      */
-    public function publishCommand($workspace = 'live')
+    public function publishCommand(string $workspace = 'live')
     {
         try {
             $this->cr->setup($workspace);
             $this->cr->publish();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
             $this->quit(1);
         }
@@ -150,14 +146,13 @@ class PageCommandController extends CommandController
      * @param string $url URL to resolve
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
      */
-    public function resolveURLCommand($url, $workspace = 'live')
+    public function resolveURLCommand(string $url, string $workspace = 'live')
     {
         try {
             $this->cr->setup($workspace);
-            /** @var NodeInterface $document */
             $document = $this->cr->getNodeForPath('');
             $this->outputLine('%s', [$this->cr->getNodePathForURL($document, $url)]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
         }
     }
@@ -168,11 +163,11 @@ class PageCommandController extends CommandController
      * @param string $parentUrl parent of the new page to be created (must exist), e.g. /news
      * @param string $name name of the node, will also be used for the URL segment
      * @param string $type node type, defaults to Neos.Neos.NodeTypes:Page
-     * @param string $properties node properties, as JSON, e.g. '{"title":"My Fancy Title"}'
+     * @param string|null $properties node properties, as JSON, e.g. '{"title":"My Fancy Title"}'
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
      * @param boolean $overwriteExisting whether to overwrite an existing node for that path instead of creating a new one with path segment "node-..."
      */
-    public function createCommand($parentUrl, $name, $type = 'Neos.NodeTypes:Page', $properties = null, $workspace = 'live', $overwriteExisting = false)
+    public function createCommand(string $parentUrl, string $name, string $type = 'Neos.NodeTypes:Page', string $properties = null, string $workspace = 'live', bool $overwriteExisting = false)
     {
         try {
             $this->cr->setup($workspace);
@@ -192,10 +187,8 @@ class PageCommandController extends CommandController
             if ($properties) {
                 $this->cr->setNodeProperties($node, $properties);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
         }
-
     }
-
 }
