@@ -1,22 +1,18 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: remuslazar
- * Date: 2019-01-30
- * Time: 16:06
- */
 
 namespace CRON\NeosCliTools\Command;
 
-use /** @noinspection PhpUnusedAliasInspection */
-    Neos\Flow\Annotations as Flow;
+use CRON\NeosCliTools\Service\CRService;
+use Exception;
+use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Cli\CommandController;
 
-class ContentCommandController extends \Neos\Flow\Cli\CommandController
+class ContentCommandController extends CommandController
 {
-
     /**
      * @Flow\Inject
-     * @var \CRON\NeosCliTools\Service\CRService
+     * @var CRService
      */
     protected $cr;
 
@@ -26,22 +22,22 @@ class ContentCommandController extends \Neos\Flow\Cli\CommandController
      * @param string $collection collection node name, defaults to 'main'
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
      */
-    public function listCommand($url, $collection = 'main', $workspace = 'live') {
+    public function listCommand(string $url, string $collection = 'main', string $workspace = 'live') {
 
         try {
             $this->cr->setup($workspace);
             $page = $this->cr->getNodeForURL($url);
-            $collectionNode = $page->getNode($collection);
+            $collectionNode = $page->findNamedChildNode(NodeName::fromString($collection));
 
             if ($collectionNode === null) {
-                throw new \Exception(sprintf('page has no collection node named "%s"', $collection));
+                throw new Exception(sprintf('page has no collection node named "%s"', $collection));
             }
 
-            foreach ($collectionNode->getChildNodes() as $childNode) {
+            foreach ($collectionNode->findChildNodes() as $childNode) {
                 $this->outputLine($childNode);
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
         }
     }
@@ -50,23 +46,23 @@ class ContentCommandController extends \Neos\Flow\Cli\CommandController
      * Creates a new content element
      *
      * @param string $url page URL of the page where the content element should be inserted
-     * @param string $properties node properties, as JSON, e.g. '{"myAttribute":"My Fancy Value"}'
+     * @param string|null $properties node properties, as JSON, e.g. '{"myAttribute":"My Fancy Value"}'
      * @param string $type node type, defaults to Neos.Neos.NodeTypes:Text
      * @param string $collection collection name, defaults to 'main'
-     * @param string $name name of the node, leave empty to get a random uuid like name
+     * @param string|null $name name of the node, leave empty to get a random uuid like name
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
-     * @param string $componentPath path of the component within the content collection where the nested content element should be inserted
+     * @param string|null $componentPath path of the component within the content collection where the nested content element should be inserted
      * @param boolean $overwriteExisting whether to overwrite an existing node for that path instead of creating a new one with path segment "node-..."
      */
     public function createCommand(
-        $url,
-        $properties = null,
-        $type = 'Neos.Neos.NodeTypes:Text',
-        $collection = 'main',
-        $name = null,
-        $workspace = 'live',
-        $componentPath = null,
-        $overwriteExisting = false
+        string $url,
+        string $properties = null,
+        string $type = 'Neos.Neos.NodeTypes:Text',
+        string $collection = 'main',
+        string $name = null,
+        string $workspace = 'live',
+        string $componentPath = null,
+        bool $overwriteExisting = false
     ) {
         try {
             $this->cr->setup($workspace);
@@ -75,7 +71,7 @@ class ContentCommandController extends \Neos\Flow\Cli\CommandController
             $page = $this->cr->getNodeForURL($url);
 
             // Check if the content collection exists. If not, create it
-            $collectionNode = $page->getNode($collection);
+            $collectionNode = $page->findNamedChildNode(NodeName::fromString($collection));
 
             if (!$collectionNode) {
                 $this->outputLine(sprintf('Could not find collection \'%s\', creating... .', $collection));
@@ -89,7 +85,7 @@ class ContentCommandController extends \Neos\Flow\Cli\CommandController
                 $componentPathSegments = explode('/', trim($componentPath, '/'));
 
                 foreach ($componentPathSegments as $componentPathSegment) {
-                    $nextSegmentNode = $segmentNode->getNode($componentPathSegment);
+                    $nextSegmentNode = $segmentNode->findNamedChildNode(NodeName::fromString($componentPathSegment));
                     if (!$nextSegmentNode) {
                         $nextSegmentNode = $segmentNode->createNode($componentPathSegment);
                     }
@@ -97,7 +93,7 @@ class ContentCommandController extends \Neos\Flow\Cli\CommandController
                 }
             }
 
-            $existingNode = $segmentNode->getNode($name);
+            $existingNode = $segmentNode->findNamedChildNode(NodeName::fromString($name));
 
             if ($overwriteExisting && $existingNode) {
                 $contentNode = $existingNode;
@@ -110,9 +106,8 @@ class ContentCommandController extends \Neos\Flow\Cli\CommandController
             if ($properties) {
                 $this->cr->setNodeProperties($contentNode, $properties);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
         }
-
     }
 }

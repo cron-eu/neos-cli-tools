@@ -1,41 +1,44 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: remuslazar
- * Date: 02.05.18
- * Time: 22:12
- */
 
 namespace CRON\NeosCliTools\Utility;
 
+use Neos\Flow\Annotations as Flow;
+use Neos\ContentRepository\Domain\NodeType\NodeTypeConstraintFactory;
+use Neos\ContentRepository\Domain\Projection\Content\TraversableNodeInterface;
+use Neos\ContentRepository\Exception\NodeException;
 use Neos\Flow\Cli\ConsoleOutput;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
  * @property int maxDepth
- * @property NodeInterface rootNode
+ * @property TraversableNodeInterface rootNode
  * @property ConsoleOutput consoleOutput
  */
 class NeosDocumentTreePrinter
 {
-    public function __construct(NodeInterface $node, $maxDepth = 0) {
+    /**
+     * @Flow\Inject
+     * @var NodeTypeConstraintFactory
+     */
+    protected $nodeTypeConstraintFactory;
+
+    public function __construct(TraversableNodeInterface $node, $maxDepth = 0) {
         $this->maxDepth = $maxDepth;
         $this->rootNode = $node;
     }
 
     private function trimPath($input) {
-        return str_replace($this->rootNode->getPath(), '', $input);
+        return str_replace($this->rootNode->findNodePath(), '', $input);
     }
 
     /**
-     * @param NodeInterface $document
+     * @param TraversableNodeInterface $document
      * @param int $currentDepth
      *
      * @param array $currentURLPathPrefix
      *
-     * @throws \Neos\ContentRepository\Exception\NodeException
+     * @throws NodeException
      */
-    private function printDocument(NodeInterface $document, $currentDepth = 0, array $currentURLPathPrefix = [])
+    private function printDocument(TraversableNodeInterface $document, int $currentDepth = 0, array $currentURLPathPrefix = [])
     {
         $urlPathPrefix = array_merge($currentURLPathPrefix, [$document->getProperty('uriPathSegment')]);
         $url = join('/', $urlPathPrefix);
@@ -44,12 +47,11 @@ class NeosDocumentTreePrinter
             str_replace('home', '', $url),
             $document->getProperty('title'),
             $document->getNodeType()->getName(),
-            $this->trimPath($document->getPath()),
+            $this->trimPath($document->findNodePath()),
         ], $currentDepth * 0);
 
-//        \Neos\Flow\var_dump($document);
         if ($currentDepth < $this->maxDepth) {
-            $childDocuments = $document->getChildNodes('Neos.Neos:Document');
+            $childDocuments = $document->findChildNodes($this->nodeTypeConstraintFactory->parseFilterString('Neos.Neos:Document'));
             foreach ($childDocuments as $childDocument) {
                 $this->printDocument($childDocument, $currentDepth + 1, $urlPathPrefix);
             }
@@ -60,14 +62,14 @@ class NeosDocumentTreePrinter
     private $documentTree = [];
 
     /**
-     * @param NodeInterface $document
+     * @param TraversableNodeInterface $document
      * @param int $currentDepth
      *
      * @param array $currentURLPathPrefix
      *
-     * @throws \Neos\ContentRepository\Exception\NodeException
+     * @throws NodeException
      */
-    private function buildDocumentTreeRecursive(NodeInterface $document, $currentDepth = 0, array $currentURLPathPrefix = [])
+    private function buildDocumentTreeRecursive(TraversableNodeInterface $document, int $currentDepth = 0, array $currentURLPathPrefix = [])
     {
         $urlPathPrefix = array_merge($currentURLPathPrefix, [$document->getProperty('uriPathSegment')]);
         $url = join('/', $urlPathPrefix);
@@ -76,11 +78,11 @@ class NeosDocumentTreePrinter
             str_replace('home', '', $url),
             $document->getProperty('title'),
             $document->getNodeType()->getName(),
-            $this->trimPath($document->getPath()),
+            $this->trimPath($document->findNodePath()),
         ];
 
         if ($currentDepth < $this->maxDepth) {
-            $childDocuments = $document->getChildNodes('Neos.Neos:Document');
+            $childDocuments = $document->findChildNodes($this->nodeTypeConstraintFactory->parseFilterString('Neos.Neos:Document'));
             foreach ($childDocuments as $childDocument) {
                 $this->buildDocumentTreeRecursive($childDocument, $currentDepth + 1, $urlPathPrefix);
             }
@@ -93,9 +95,9 @@ class NeosDocumentTreePrinter
      *
      * @param bool $asTable
      *
-     * @throws \Neos\ContentRepository\Exception\NodeException
+     * @throws NodeException
      */
-    public function printTree(ConsoleOutput $output, $asTable = true)
+    public function printTree(ConsoleOutput $output, bool $asTable = true)
     {
         $this->consoleOutput = $output;
         if ($asTable) {
