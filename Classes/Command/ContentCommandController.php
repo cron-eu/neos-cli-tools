@@ -4,9 +4,11 @@ namespace CRON\NeosCliTools\Command;
 
 use CRON\NeosCliTools\Service\CRService;
 use Exception;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
+use Neos\Flow\Cli\Exception\StopCommandException;
 
 class ContentCommandController extends CommandController
 {
@@ -108,6 +110,56 @@ class ContentCommandController extends CommandController
             }
         } catch (Exception $e) {
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
+        }
+    }
+
+    /**
+     * Updates properties, name and hidden state of a content node
+     *
+     * @param string $identifier node identifier of the content element
+     * @param string|null $properties node properties, as JSON, e.g. '{"title":"My Fancy Title"}'
+     * @param string|null $name $name name of the node, will also update the URL path segment
+     * @param bool|null $hide
+     * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
+     * @throws StopCommandException
+     */
+    public function updateCommand(string $identifier, string $properties = null, string $name = null, bool $hide = null, string $workspace = 'live')
+    {
+        try {
+            $this->cr->setup($workspace);
+            $node = $this->cr->getNodeForIdentifier($identifier);
+            if (!$node) {
+                $this->outputLine('Unable to find node.');
+                $this->quit(1);
+            }
+
+            if (!$node->getNodeType()->isOfType('Neos.Neos:Content')) {
+                $this->outputLine('The found node is not a content element.');
+                $this->quit(1);
+            }
+
+            if ($properties !== null) {
+                $this->cr->setNodeProperties($node, $properties);
+
+                $this->outputLine('Updated properties.');
+            }
+
+            if (!empty($name)) {
+                $parentNode = $node->findParentNode();
+                $nodeName = $this->cr->generateUniqNodeName($parentNode, $name);
+                $node->setName($nodeName);
+
+                $this->outputLine('Updated node name: "%s"', [$nodeName]);
+            }
+
+            if ($hide !== null) {
+                $node->setHidden($hide);
+
+                $this->outputLine('Hidden state set to %s.', [$hide ? 'true' : 'false']);
+            }
+        } catch (Exception $e) {
+            $this->outputLine('ERROR: %s', [$e->getMessage()]);
+            $this->quit(1);
         }
     }
 }

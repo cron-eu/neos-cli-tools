@@ -2,6 +2,7 @@
 
 namespace CRON\NeosCliTools\Command;
 
+use Cocur\Slugify\SlugifyInterface;
 use CRON\NeosCliTools\Service\CRService;
 use Exception;
 use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
@@ -33,6 +34,12 @@ class PageCommandController extends CommandController
      * @var CRService
      */
     protected $cr;
+
+    /**
+     * @Flow\Inject
+     * @var SlugifyInterface
+     */
+    protected $slugify;
 
     /**
      * Shows the current configuration of the working environment
@@ -189,6 +196,109 @@ class PageCommandController extends CommandController
             }
         } catch (Exception $e) {
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
+        }
+    }
+
+    /**
+     * Strips tags from a page node title and optionally also updates the URI path segment
+     *
+     * @param string $identifier node identifier of the page
+     * @param bool $allowBreaks whether <br>-tags should be allowed and not stripped
+     * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
+     * @throws StopCommandException
+     */
+    public function stripTagsFromTitleCommand(string $identifier, bool $allowBreaks = false, bool $updateUriPathSegment = true, string $workspace = 'live')
+    {
+        try {
+            $this->cr->setup($workspace);
+            $node = $this->cr->getNodeForIdentifier($identifier);
+            if (!$node) {
+                $this->outputLine('Unable to find node.');
+                $this->quit(1);
+            }
+
+            if (!$node->getNodeType()->isOfType('Neos.Neos:Document')) {
+                $this->outputLine('The found node is not a page.');
+                $this->quit(1);
+            }
+
+            $title = $node->getProperty('title');
+            $updatedTitle = strip_tags($title, $allowBreaks ? '<br>' : null);
+
+            if ($title != $updatedTitle) {
+                $node->setProperty('title', $updatedTitle);
+                $this->outputLine('Updated title "%s" -> "%s".', [$title, $updatedTitle]);
+            } else {
+                $this->outputLine('No changes to title "%s".', [$updatedTitle]);
+            }
+
+            if ($updateUriPathSegment) {
+                $uriPathSegment = $node->getProperty('uriPathSegment');
+
+                $updatedUriPathSegment = $this->slugify->slugify(html_entity_decode(strip_tags(str_replace('<br', ' <br', $updatedTitle))));
+
+                if ($uriPathSegment != $updatedUriPathSegment) {
+                    $node->setProperty('uriPathSegment', $updatedUriPathSegment);
+                    $this->outputLine('Updated URI path segment "%s" -> "%s".', [$uriPathSegment, $updatedUriPathSegment]);
+                } else {
+                    $this->outputLine('No changes to URI path segment "%s".', [$updatedUriPathSegment]);
+                }
+            }
+        } catch (Exception $e) {
+            $this->outputLine('ERROR: %s', [$e->getMessage()]);
+            $this->quit(1);
+        }
+    }
+
+    /**
+     * Updates properties, name and hidden state of a page node
+     *
+     * @param string $identifier node identifier of the page
+     * @param string|null $properties node properties, as JSON, e.g. '{"title":"My Fancy Title"}'
+     * @param string|null $name $name name of the node, will also update the URL path segment
+     * @param bool|null $hide
+     * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
+     * @throws StopCommandException
+     */
+    public function updateCommand(string $identifier, string $properties = null, string $name = null, bool $hide = null, string $workspace = 'live')
+    {
+        try {
+            $this->cr->setup($workspace);
+            $node = $this->cr->getNodeForIdentifier($identifier);
+            if (!$node) {
+                $this->outputLine('Unable to find node.');
+                $this->quit(1);
+            }
+
+            if (!$node->getNodeType()->isOfType('Neos.Neos:Document')) {
+                $this->outputLine('The found node is not a page.');
+                $this->quit(1);
+            }
+
+            if ($properties !== null) {
+                $this->cr->setNodeProperties($node, $properties);
+
+                $this->outputLine('Updated properties.');
+            }
+
+            if (!empty($name)) {
+                $parentNode = $node->findParentNode();
+                $nodeName = $this->cr->generateUniqNodeName($parentNode, $name);
+                $node->setName($nodeName);
+
+                $node->setProperty('uriPathSegment', $nodeName);
+
+                $this->outputLine('Updated node name and URI path segment: "%s"', [$nodeName]);
+            }
+
+            if ($hide !== null) {
+                $node->setHidden($hide);
+
+                $this->outputLine('Hidden state set to %s.', [$hide ? 'true' : 'false']);
+            }
+        } catch (Exception $e) {
+            $this->outputLine('ERROR: %s', [$e->getMessage()]);
+            $this->quit(1);
         }
     }
 }

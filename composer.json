@@ -3,7 +3,8 @@
   "type": "neos-package",
   "require": {
     "neos/neos": "^4.3 || ^5.0 || ^7.0",
-    "neos/flow": "^5.3 || ^6.0 || ^7.0"
+    "neos/flow": "^5.3 || ^6.0 || ^7.0",
+    "cocur/slugify": "^4.0"
   },
   "license": "proprietary",
   "description": "CLI Content Repository related utilities (previously part of CRLib)",

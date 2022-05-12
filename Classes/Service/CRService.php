@@ -4,6 +4,7 @@ namespace CRON\NeosCliTools\Service;
 
 use DateTime;
 use Exception;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\NodeType\NodeTypeConstraintFactory;
 use Neos\ContentRepository\Domain\Projection\Content\TraversableNodeInterface;
@@ -214,6 +215,16 @@ class CRService
     public function getNodeForPath(string $path): TraversableNodeInterface
     {
         return $this->context->getNode($this->sitePath . $path);
+    }
+
+    /**
+     * @param $identifier
+     *
+     * @return TraversableNodeInterface|null
+     */
+    public function getNodeForIdentifier($identifier): ?TraversableNodeInterface
+    {
+        return $this->context->getNodeByIdentifier($identifier);
     }
 
     /**
