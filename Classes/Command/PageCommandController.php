@@ -255,7 +255,7 @@ class PageCommandController extends CommandController
      *
      * @param string $identifier node identifier of the page
      * @param string|null $properties node properties, as JSON, e.g. '{"title":"My Fancy Title"}'
-     * @param string|null $name $name name of the node, will also update the URL path segment
+     * @param string|null $name name of the node, will also update the URL path segment
      * @param bool|null $hide
      * @param string $workspace workspace to use, e.g. 'user-admin', defaults to 'live'
      * @throws StopCommandException
