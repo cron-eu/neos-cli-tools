@@ -12,7 +12,6 @@ use CRON\NeosCliTools\Utility\NeosDocumentTreePrinter;
 use CRON\NeosCliTools\Utility\NeosDocumentWalker;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Cli\Exception\StopCommandException;
-use Neos\Flow\Mvc\Exception\StopActionException;
 
 /**
  * Class PageCommandController
@@ -123,7 +122,7 @@ class PageCommandController extends CommandController
             $this->quit(count($nodesToDelete) > 0 ? 0 : 1);
 
         } catch (Exception $e) {
-            if ($e instanceof StopActionException) { return; }
+            if ($e instanceof StopCommandException) { return; }
             $this->outputLine('ERROR: %s', [$e->getMessage()]);
             $this->quit(1);
         }
